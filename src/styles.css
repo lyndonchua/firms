@@ -1,0 +1,81 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f5f7fb;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+
+.app-shell { max-width: 1180px; margin: 0 auto; padding: 28px 24px 20px; }
+.hero { display: flex; justify-content: space-between; align-items: end; margin-bottom: 20px; }
+.kicker { font-size: 0.73rem; letter-spacing: 0.13em; font-weight: 800; color: #5f6b85; }
+h1 { margin: 7px 0 5px; font-size: clamp(1.8rem, 3vw, 2.65rem); line-height: 1.05; letter-spacing: -0.035em; }
+.hero p { margin: 0; color: #657087; max-width: 680px; }
+
+.scenario-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.scenario-tabs button {
+  border: 1px solid #dce1ec; background: #fff; border-radius: 12px; padding: 12px 14px;
+  font-weight: 750; color: #48536b; display: flex; gap: 9px; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(29, 41, 67, 0.04); transition: 0.18s ease;
+}
+.scenario-tabs button:hover { transform: translateY(-1px); border-color: #aab6ce; }
+.scenario-tabs button span { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #eef1f7; font-size: 0.75rem; }
+.scenario-tabs button.active { color: #fff; background: #263f77; border-color: #263f77; }
+.scenario-tabs button.active span { background: rgba(255,255,255,.18); }
+
+.control-strip {
+  display: grid; grid-template-columns: minmax(250px, 1fr) minmax(280px, 1.1fr) auto;
+  gap: 24px; align-items: center; background: #fff; border: 1px solid #dfe4ee; border-radius: 14px;
+  padding: 15px 17px; box-shadow: 0 5px 20px rgba(29, 41, 67, 0.055); margin-bottom: 14px;
+}
+.control-label { font-weight: 850; font-size: 0.98rem; }
+.control-strip p { margin: 4px 0 0; font-size: 0.82rem; line-height: 1.45; color: #69758c; }
+.slider-topline { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 750; }
+.slider-topline output { color: #263f77; background: #edf2ff; border-radius: 999px; min-width: 54px; text-align: center; padding: 3px 8px; }
+input[type="range"] { width: 100%; accent-color: #263f77; margin: 9px 0 1px; }
+.range-labels { display: flex; justify-content: space-between; color: #8892a5; font-size: 0.65rem; }
+.reset-button { border: 1px solid #dce1ec; background: #f8f9fc; color: #536078; border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; gap: 7px; font-weight: 750; }
+.reset-button:hover { background: #f0f3f9; }
+
+.comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.diagram-card { background: #fff; border: 1px solid #dfe4ee; border-radius: 16px; padding: 15px 15px 9px; box-shadow: 0 8px 26px rgba(29, 41, 67, 0.06); min-width: 0; }
+.diagram-card.after { border-color: #cbd6ef; }
+.diagram-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 3px 4px; }
+.eyebrow { font-size: 0.68rem; letter-spacing: 0.12em; font-weight: 900; color: #7e8799; }
+.diagram-heading h2 { margin: 2px 0 0; font-size: 1rem; }
+.change-pill { font-size: 0.72rem; font-weight: 800; color: #263f77; background: #edf2ff; border-radius: 999px; padding: 5px 9px; }
+.chart { width: 100%; height: auto; display: block; }
+.grid { stroke: #edf0f5; stroke-width: 1; }
+.axis { stroke: #293244; stroke-width: 1.8; }
+.axis-arrow { fill: #293244; }
+.curve { fill: none; stroke-width: 3.1; stroke-linecap: round; stroke-linejoin: round; }
+.ac { stroke: #2b65c8; }
+.mc { stroke: #d34545; }
+.ar { stroke: #318367; }
+.mr { stroke: #8d57b4; }
+.curve-label { font-size: 13px; font-weight: 850; paint-order: stroke; stroke: white; stroke-width: 4px; stroke-linejoin: round; }
+.ac-label { fill: #2b65c8; }
+.mc-label { fill: #d34545; }
+.ar-label { fill: #318367; }
+.mr-label { fill: #8d57b4; }
+.axis-label { font-size: 11px; font-weight: 700; fill: #69758a; }
+footer { text-align: center; color: #7b8598; font-size: 0.76rem; padding: 14px 0 0; }
+
+@media (max-width: 850px) {
+  .scenario-tabs { grid-template-columns: 1fr 1fr; }
+  .control-strip { grid-template-columns: 1fr; gap: 12px; }
+  .reset-button { justify-self: start; }
+  .comparison-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .app-shell { padding: 18px 12px; }
+  .scenario-tabs { gap: 7px; }
+  .scenario-tabs button { padding: 10px 6px; font-size: 0.78rem; }
+  .scenario-tabs button span { display: none; }
+  .diagram-card { padding: 12px 7px 6px; }
+}
