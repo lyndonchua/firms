@@ -76,33 +76,33 @@ function buildGraph(values) {
   const eosRight = economies * 0.28;
   const eosDown = economies * 0.22;
 
-  const costCentre = 48 + eosRight;
-  const variableCostShift = (variableCost - BASE.variableCost) * 1.25;
-  const fixedCostShift = (fixedCost - BASE.fixedCost) * 0.08;
+  const baseCentre = 48 + eosRight;
+  const baseMinCost = 18 + variableCost * 1.25 - eosDown;
 
   /*
-    Fixed cost:
-    - MC is unchanged.
-    - The whole AC curve shifts vertically.
-    - AC₁ and AC₂ therefore keep the same shape and never intersect.
-
-    Variable cost and economies of scale:
-    - These continue to affect both AC and MC.
+    Fixed-cost change:
+    - MC remains unchanged.
+    - AC moves along the unchanged MC curve.
+    - The minimum point of AC always lies on MC.
   */
-  const mcBase = 18 + BASE.variableCost * 1.25 - eosDown;
+  const fixedCostGap = fixedCost - BASE.fixedCost;
+  const acMinQ = Math.max(
+    12,
+    Math.min(92, baseCentre + fixedCostGap * 0.13)
+  );
+
   const mcAt = (q) =>
-    mcBase +
-    variableCostShift +
-    18 * (Math.exp(0.035 * (q - costCentre)) - 1);
+    baseMinCost +
+    18 * (Math.exp(0.035 * (q - baseCentre)) - 1);
 
-  const acMinQ = costCentre;
-  const acVariableBase =
-    mcBase +
-    variableCostShift +
-    18 * (Math.exp(0.035 * (acMinQ - costCentre)) - 1);
+  const minAC = mcAt(acMinQ);
 
-  const minAC = acVariableBase + fixedCostShift;
-  const acAt = (q) => minAC + Math.pow(q - acMinQ, 2) / 70;
+  /*
+    The AC curve is centred on its new minimum.
+    Its minimum value is exactly the value of MC at that output.
+  */
+  const acAt = (q) =>
+    minAC + Math.pow(q - acMinQ, 2) / 70;
 
   const arAt = (q) => Math.max(0, arIntercept - q * 0.82);
   const mrAt = (q) => mrIntercept - q * 1.64;
