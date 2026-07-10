@@ -76,33 +76,62 @@ function buildGraph(values) {
   const eosRight = economies * 0.28;
   const eosDown = economies * 0.22;
 
-  const baseCentre = 48 + eosRight;
-  const baseMinCost = 18 + variableCost * 1.25 - eosDown;
+  const costCentre = 48 + eosRight;
+  const variableCostShift = (variableCost - BASE.variableCost) * 1.25;
 
   /*
-    Fixed-cost change:
-    - MC remains unchanged.
-    - AC moves along the unchanged MC curve.
-    - The minimum point of AC always lies on MC.
+    MC is determined only by variable costs and economies of scale.
+    A change in fixed cost therefore leaves MC unchanged.
   */
-  const fixedCostGap = fixedCost - BASE.fixedCost;
-  const acMinQ = Math.max(
-    12,
-    Math.min(92, baseCentre + fixedCostGap * 0.13)
-  );
+  const mcBase = 18 + BASE.variableCost * 1.25 - eosDown;
 
   const mcAt = (q) =>
-    baseMinCost +
-    18 * (Math.exp(0.035 * (q - baseCentre)) - 1);
-
-  const minAC = mcAt(acMinQ);
+    mcBase +
+    variableCostShift +
+    18 * (Math.exp(0.035 * (q - costCentre)) - 1);
 
   /*
-    The AC curve is centred on its new minimum.
-    Its minimum value is exactly the value of MC at that output.
+    AC is derived from:
+      AC = (FC + TVC) / Q
+
+    TVC is the area under the MC curve:
+      TVC(Q) = integral of MC from 0 to Q
+
+    Therefore, when fixed cost changes:
+      AC₂ - AC₁ = (FC₂ - FC₁) / Q
+
+    This guarantees:
+    - AC₁ and AC₂ never intersect for Q > 0
+    - MC remains unchanged
+    - each AC curve reaches its minimum where AC = MC
   */
-  const acAt = (q) =>
-    minAC + Math.pow(q - acMinQ, 2) / 70;
+  const totalVariableCostAt = (q) => {
+    const safeQ = Math.max(0.001, q);
+    const exponentialPart =
+      (18 / 0.035) *
+      (
+        Math.exp(0.035 * (safeQ - costCentre)) -
+        Math.exp(0.035 * (0 - costCentre))
+      );
+
+    return (
+      (mcBase + variableCostShift - 18) * safeQ +
+      exponentialPart
+    );
+  };
+
+  /*
+    Scale the displayed fixed-cost value so that the AC curves remain
+    clearly visible within the 0–100 graph range.
+  */
+  const displayedFixedCost = fixedCost * 8;
+
+  const acAt = (q) => {
+    const safeQ = Math.max(1, q);
+    return (
+      displayedFixedCost + totalVariableCostAt(safeQ)
+    ) / safeQ;
+  };
 
   const arAt = (q) => Math.max(0, arIntercept - q * 0.82);
   const mrAt = (q) => mrIntercept - q * 1.64;
@@ -115,6 +144,17 @@ function buildGraph(values) {
     if (gap < smallestGap) {
       smallestGap = gap;
       q = i;
+    }
+  }
+
+  let acMinQ = 1;
+  let minAC = acAt(1);
+
+  for (let i = 1; i <= 95; i += 0.25) {
+    const value = acAt(i);
+    if (value < minAC) {
+      minAC = value;
+      acMinQ = i;
     }
   }
 
