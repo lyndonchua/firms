@@ -72,20 +72,38 @@ function buildGraph(values) {
   const demandShift = marketShare * 0.5;
   const arIntercept = 68 + demandShift;
   const mrIntercept = arIntercept;
+
   const eosRight = economies * 0.28;
   const eosDown = economies * 0.22;
 
-  const baseCentre = 48 + eosRight;
-  const baseMinCost = 18 + variableCost * 1.25 - eosDown;
-  const fixedCostGap = fixedCost - 120;
+  const costCentre = 48 + eosRight;
+  const variableCostShift = (variableCost - BASE.variableCost) * 1.25;
+  const fixedCostShift = (fixedCost - BASE.fixedCost) * 0.08;
 
-  const acMinQ = Math.max(12, Math.min(92, baseCentre + fixedCostGap * 0.13));
+  /*
+    Fixed cost:
+    - MC is unchanged.
+    - The whole AC curve shifts vertically.
+    - AC₁ and AC₂ therefore keep the same shape and never intersect.
 
+    Variable cost and economies of scale:
+    - These continue to affect both AC and MC.
+  */
+  const mcBase = 18 + BASE.variableCost * 1.25 - eosDown;
   const mcAt = (q) =>
-    baseMinCost + 18 * (Math.exp(0.035 * (q - baseCentre)) - 1);
+    mcBase +
+    variableCostShift +
+    18 * (Math.exp(0.035 * (q - costCentre)) - 1);
 
-  const minAC = mcAt(acMinQ);
+  const acMinQ = costCentre;
+  const acVariableBase =
+    mcBase +
+    variableCostShift +
+    18 * (Math.exp(0.035 * (acMinQ - costCentre)) - 1);
+
+  const minAC = acVariableBase + fixedCostShift;
   const acAt = (q) => minAC + Math.pow(q - acMinQ, 2) / 70;
+
   const arAt = (q) => Math.max(0, arIntercept - q * 0.82);
   const mrAt = (q) => mrIntercept - q * 1.64;
 
@@ -331,7 +349,10 @@ function CombinedDiagram({ before, after, changedCurves }) {
 
   const makePath = (pts, key) =>
     pts
-      .map((point, index) => `${index === 0 ? "M" : "L"}${x(point.q)},${y(point[key])}`)
+      .map(
+        (point, index) =>
+          `${index === 0 ? "M" : "L"}${x(point.q)},${y(point[key])}`
+      )
       .join(" ");
 
   const keys = ["ar", "mr", "ac", "mc"];
@@ -341,6 +362,27 @@ function CombinedDiagram({ before, after, changedCurves }) {
   const afterQX = x(after.q);
   const beforePY = y(before.arAtQ);
   const afterPY = y(after.arAtQ);
+  const beforeACY = y(before.acAtQ);
+  const afterACY = y(after.acAtQ);
+
+  const profitRect = (graph, version) => {
+    const qx = x(graph.q);
+    const priceY = y(graph.arAtQ);
+    const acY = y(graph.acAtQ);
+    const isProfit = graph.profitPerUnit >= 0;
+    const top = isProfit ? priceY : acY;
+    const height = Math.abs(acY - priceY);
+
+    return (
+      <rect
+        x={L}
+        y={top}
+        width={Math.max(0, qx - L)}
+        height={height}
+        className={`profit-area ${version} ${isProfit ? "profit" : "loss"}`}
+      />
+    );
+  };
 
   const labelPosition = (key, graph, version) => {
     const qMap = { mc: 88, ac: 90, ar: 91, mr: 55 };
@@ -348,7 +390,7 @@ function CombinedDiagram({ before, after, changedCurves }) {
     const fn = graph[`${key}At`];
     const value = key === "mr" ? Math.max(0, fn(q)) : fn(q);
     const offsetY = key === "ar" ? 18 : key === "mr" ? 28 : -8;
-    const offsetX = version === 1 ? -10 : 8;
+    const offsetX = version === 1 ? -14 : 10;
     return { x: x(q) + offsetX, y: y(value) + offsetY };
   };
 
@@ -356,19 +398,73 @@ function CombinedDiagram({ before, after, changedCurves }) {
     <div className="diagram-wrap">
       <svg viewBox={`0 0 ${W} ${H}`}>
         <defs>
-          <marker id="axis-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+          <marker
+            id="axis-arrow"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="3"
+            orient="auto"
+          >
             <path d="M0,0 L0,6 L9,3 z" fill="black" />
           </marker>
+
+          <pattern
+            id="before-profit-pattern"
+            width="8"
+            height="8"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <line
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="8"
+              stroke="rgba(5,150,105,0.42)"
+              strokeWidth="3"
+            />
+          </pattern>
         </defs>
 
-        <line x1={L} y1={H - B} x2={W - 18} y2={H - B} stroke="black" strokeWidth="3" markerEnd="url(#axis-arrow)" />
-        <line x1={L} y1={H - B} x2={L} y2={15} stroke="black" strokeWidth="3" markerEnd="url(#axis-arrow)" />
+        <line
+          x1={L}
+          y1={H - B}
+          x2={W - 18}
+          y2={H - B}
+          stroke="black"
+          strokeWidth="3"
+          markerEnd="url(#axis-arrow)"
+        />
+        <line
+          x1={L}
+          y1={H - B}
+          x2={L}
+          y2={15}
+          stroke="black"
+          strokeWidth="3"
+          markerEnd="url(#axis-arrow)"
+        />
 
-        <text x={W - 30} y={H - 25} fontSize="28" fontStyle="italic">Q</text>
-        <text x={18} y={35} fontSize="16" fontWeight="600">Price /</text>
-        <text x={18} y={56} fontSize="16" fontWeight="600">Cost /</text>
-        <text x={18} y={77} fontSize="16" fontWeight="600">Revenue</text>
-        <text x={L + 8} y={H - B + 26} fontSize="18">0</text>
+        <text x={W - 30} y={H - 25} fontSize="28" fontStyle="italic">
+          Q
+        </text>
+        <text x={18} y={35} fontSize="16" fontWeight="600">
+          Price /
+        </text>
+        <text x={18} y={56} fontSize="16" fontWeight="600">
+          Cost /
+        </text>
+        <text x={18} y={77} fontSize="16" fontWeight="600">
+          Revenue
+        </text>
+        <text x={L + 8} y={H - B + 26} fontSize="18">
+          0
+        </text>
+
+        {/* Profit/loss areas are drawn behind all curves. */}
+        {profitRect(before, "before")}
+        {profitRect(after, "after")}
 
         {keys.map((key) => {
           const changes = changedCurves.includes(key);
@@ -404,18 +500,107 @@ function CombinedDiagram({ before, after, changedCurves }) {
           );
         })}
 
-        <line x1={beforeQX} y1={H - B} x2={beforeQX} y2={beforePY} stroke="#64748b" strokeDasharray="7 6" strokeWidth="1.6" />
-        <line x1={L} y1={beforePY} x2={beforeQX} y2={beforePY} stroke="#64748b" strokeDasharray="7 6" strokeWidth="1.6" />
-        <circle cx={beforeQX} cy={beforePY} r="5" fill="white" stroke="#64748b" strokeWidth="2.5" />
+        {/* Before equilibrium guides */}
+        <line
+          x1={beforeQX}
+          y1={H - B}
+          x2={beforeQX}
+          y2={Math.min(beforePY, beforeACY)}
+          stroke="#64748b"
+          strokeDasharray="7 6"
+          strokeWidth="1.5"
+        />
+        <line
+          x1={L}
+          y1={beforePY}
+          x2={beforeQX}
+          y2={beforePY}
+          stroke="#64748b"
+          strokeDasharray="7 6"
+          strokeWidth="1.5"
+        />
+        <line
+          x1={L}
+          y1={beforeACY}
+          x2={beforeQX}
+          y2={beforeACY}
+          stroke="#64748b"
+          strokeDasharray="7 6"
+          strokeWidth="1.5"
+        />
 
-        <line x1={afterQX} y1={H - B} x2={afterQX} y2={afterPY} stroke="black" strokeDasharray="5 4" strokeWidth="1.6" />
-        <line x1={L} y1={afterPY} x2={afterQX} y2={afterPY} stroke="black" strokeDasharray="5 4" strokeWidth="1.6" />
+        {/* After equilibrium guides */}
+        <line
+          x1={afterQX}
+          y1={H - B}
+          x2={afterQX}
+          y2={Math.min(afterPY, afterACY)}
+          stroke="black"
+          strokeDasharray="5 4"
+          strokeWidth="1.6"
+        />
+        <line
+          x1={L}
+          y1={afterPY}
+          x2={afterQX}
+          y2={afterPY}
+          stroke="black"
+          strokeDasharray="5 4"
+          strokeWidth="1.6"
+        />
+        <line
+          x1={L}
+          y1={afterACY}
+          x2={afterQX}
+          y2={afterACY}
+          stroke="black"
+          strokeDasharray="5 4"
+          strokeWidth="1.6"
+        />
+
+        <circle
+          cx={beforeQX}
+          cy={beforePY}
+          r="5"
+          fill="white"
+          stroke="#64748b"
+          strokeWidth="2.5"
+        />
+        <circle
+          cx={beforeQX}
+          cy={beforeACY}
+          r="5"
+          fill="white"
+          stroke="#64748b"
+          strokeWidth="2.5"
+        />
         <circle cx={afterQX} cy={afterPY} r="5.5" fill="black" />
+        <circle cx={afterQX} cy={afterACY} r="5.5" fill="black" />
 
-        <text x={beforeQX - 12} y={H - B + 28} fontSize="17" fill="#64748b">Q₁</text>
-        <text x={afterQX - 12} y={H - B + 48} fontSize="17">Q₂</text>
-        <text x={L - 34} y={beforePY + 5} fontSize="17" fill="#64748b">P₁</text>
-        <text x={L - 34} y={afterPY + 5} fontSize="17">P₂</text>
+        <text
+          x={beforeQX - 15}
+          y={H - B + 28}
+          fontSize="17"
+          fill="#64748b"
+        >
+          Q₁
+        </text>
+        <text x={afterQX - 15} y={H - B + 49} fontSize="17">
+          Q₂
+        </text>
+
+        <text x={L - 39} y={beforePY + 5} fontSize="17" fill="#64748b">
+          P₁
+        </text>
+        <text x={L - 39} y={afterPY + 5} fontSize="17">
+          P₂
+        </text>
+        <text x={L - 49} y={beforeACY + 5} fontSize="16" fill="#64748b">
+          AC₁
+        </text>
+        <text x={L - 49} y={afterACY + 5} fontSize="16">
+          AC₂
+        </text>
 
         {keys.map((key) => {
           const changes = changedCurves.includes(key);
@@ -462,3 +647,4 @@ function CombinedDiagram({ before, after, changedCurves }) {
     </div>
   );
 }
+
